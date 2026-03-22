@@ -1,0 +1,5 @@
+{"timestamp":"2026-03-20T01:00:00.000Z","type":"session_meta","payload":{"cwd":"C:/work/app-alpha","source":"cli","originator":"codex"}}
+{"timestamp":"2026-03-20T01:00:01.000Z","type":"turn_context","payload":{"model":"gpt-5-codex"}}
+{"timestamp":"2026-03-20T01:00:05.000Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":1000,"cache_read_input_tokens":200,"output_tokens":100,"reasoning_output_tokens":40,"total_tokens":1100}}}}
+{"timestamp":"2026-03-20T01:01:00.000Z","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":1600,"cache_read_input_tokens":250,"output_tokens":160,"reasoning_output_tokens":60,"total_tokens":1760}}}}
+{"timestamp":"2026-03-20T01:02:00.000Z","type":"event_msg","payload":{"type":"token_count","info":{"last_token_usage":{"input_tokens":400,"cached_input_tokens":100,"output_tokens":40,"reasoning_output_tokens":10,"total_tokens":440},"total_token_usage":{"input_tokens":2000,"cache_read_input_tokens":350,"output_tokens":200,"reasoning_output_tokens":70,"total_tokens":2200}}}}

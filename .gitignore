@@ -1,0 +1,6 @@
+node_modules/
+dist/
+*.tsbuildinfo
+vitest.config.js
+vitest.config.js.map
+vitest.config.d.ts

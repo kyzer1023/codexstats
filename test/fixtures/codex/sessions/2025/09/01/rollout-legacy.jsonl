@@ -1,0 +1,2 @@
+{"timestamp":"2025-09-01T12:00:00.000Z","type":"session_meta","payload":{"cwd":"C:/work/legacy","source":"cli","originator":"codex"}}
+{"timestamp":"2025-09-01T12:00:01.000Z","type":"turn_context","payload":{"model":"codex-mini-latest"}}

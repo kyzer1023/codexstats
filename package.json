@@ -1,0 +1,29 @@
+{
+  "name": "codexstats",
+  "version": "0.1.0",
+  "description": "CLI for estimating Codex usage and API-equivalent cost from local session logs.",
+  "type": "module",
+  "bin": {
+    "codexstats": "./dist/cli.js"
+  },
+  "main": "./dist/cli.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/cli.ts",
+    "test": "vitest run"
+  },
+  "keywords": [
+    "codex",
+    "cli",
+    "usage",
+    "pricing"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.0"
+  }
+}
