@@ -71,7 +71,7 @@ describe("runCli", () => {
 
     const { stdout } = read();
     expect(exitCode).toBe(0);
-    expect(stdout).toContain("+");
+    expect(stdout).toContain("┌");
     expect(stdout).toContain("2026-03-21");
     expect(stdout).toContain("Total");
     expect(stdout).not.toContain("2026-03-20");

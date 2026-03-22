@@ -51,9 +51,17 @@ function splitUsageTokens(usage: {
 function formatModels(models: Record<string, ModelUsageSummary>): string {
   const names = Object.entries(models)
     .sort(([left], [right]) => left.localeCompare(right))
-    .map(([model, usage]) => (usage.isFallback ? `${model} (fallback)` : model));
+    .map(([model, usage]) => `- ${usage.isFallback ? `${model} (fallback)` : model}`);
 
-  return names.length > 0 ? names.join(", ") : "-";
+  return names.length > 0 ? names.join("\n") : "-";
+}
+
+export function renderTitleBox(title: string): string {
+  const width = title.length + 2;
+  const top = `┌${"─".repeat(width)}┐`;
+  const middle = `│ ${title} │`;
+  const bottom = `└${"─".repeat(width)}┘`;
+  return `${top}\n${middle}\n${bottom}\n`;
 }
 
 export function renderSummaryText(summary: SummaryReport): string {

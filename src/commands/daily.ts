@@ -1,6 +1,6 @@
 import { aggregateDaily } from "../aggregate/daily.js";
 import { CommandContext, CommandOutput } from "../types.js";
-import { renderBucketText } from "../render/text.js";
+import { renderBucketText, renderTitleBox } from "../render/text.js";
 
 export function runDailyCommand(
   context: CommandContext,
@@ -8,6 +8,11 @@ export function runDailyCommand(
   const rows = aggregateDaily(context.pricedEvents);
   return {
     data: rows,
-    text: renderBucketText(rows, "Date"),
+    text:
+      renderTitleBox(
+        `Codex Token Usage Report - Daily (Timezone: ${context.options.timezone})`,
+      ) +
+      "\n" +
+      renderBucketText(rows, "Date"),
   };
 }

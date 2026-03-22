@@ -5,26 +5,42 @@ export interface RenderTableOptions {
   footer?: string[];
 }
 
-function repeatCell(char: string, width: number): string {
-  return char.repeat(width + 2);
+function getCellLines(value: string): string[] {
+  return value.split("\n");
 }
 
 function padCell(value: string, width: number, align: TableAlign): string {
   return align === "right" ? value.padStart(width) : value.padEnd(width);
 }
 
-function renderBorder(widths: number[]): string {
-  return `+${widths.map((width) => repeatCell("-", width)).join("+")}+`;
+function renderBorder(
+  widths: number[],
+  left: string,
+  join: string,
+  right: string,
+): string {
+  return `${left}${widths.map((width) => "─".repeat(width + 2)).join(join)}${right}`;
 }
 
-function renderRow(row: string[], widths: number[], aligns: TableAlign[]): string {
-  const cells = widths.map((width, index) => {
-    const value = row[index] ?? "";
-    const align = aligns[index] ?? "left";
-    return ` ${padCell(value, width, align)} `;
-  });
+function renderLogicalRow(
+  row: string[],
+  widths: number[],
+  aligns: TableAlign[],
+): string[] {
+  const cells = widths.map((_, index) => getCellLines(row[index] ?? ""));
+  const lineCount = Math.max(...cells.map((cell) => cell.length), 1);
+  const lines: string[] = [];
 
-  return `|${cells.join("|")}|`;
+  for (let lineIndex = 0; lineIndex < lineCount; lineIndex += 1) {
+    const rendered = widths.map((width, columnIndex) => {
+      const align = aligns[columnIndex] ?? "left";
+      const value = cells[columnIndex]?.[lineIndex] ?? "";
+      return ` ${padCell(value, width, align)} `;
+    });
+    lines.push(`│${rendered.join("│")}│`);
+  }
+
+  return lines;
 }
 
 export function renderTable(
@@ -41,25 +57,29 @@ export function renderTable(
 
   const widths = headers.map((header, index) =>
     Math.max(
-      header.length,
-      ...sourceRows.map((row) => row[index]?.length ?? 0),
+      ...[header, ...sourceRows.map((row) => row[index] ?? "")]
+        .flatMap((value) => getCellLines(value))
+        .map((line) => line.length),
     ),
   );
+
   const aligns = headers.map((_, index) => options.aligns?.[index] ?? "left");
-  const border = renderBorder(widths);
+  const topBorder = renderBorder(widths, "┌", "┬", "┐");
+  const middleBorder = renderBorder(widths, "├", "┼", "┤");
+  const bottomBorder = renderBorder(widths, "└", "┴", "┘");
 
   const lines = [
-    border,
-    renderRow(headers, widths, headers.map(() => "left")),
-    border,
-    ...rows.map((row) => renderRow(row, widths, aligns)),
+    topBorder,
+    ...renderLogicalRow(headers, widths, headers.map(() => "left")),
+    middleBorder,
+    ...rows.flatMap((row) => renderLogicalRow(row, widths, aligns)),
   ];
 
   if (footer) {
-    lines.push(border);
-    lines.push(renderRow(footer, widths, aligns));
+    lines.push(middleBorder);
+    lines.push(...renderLogicalRow(footer, widths, aligns));
   }
 
-  lines.push(border);
+  lines.push(bottomBorder);
   return lines.join("\n");
 }
