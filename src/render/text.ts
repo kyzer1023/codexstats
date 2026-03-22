@@ -1,3 +1,4 @@
+import pc from "picocolors";
 import {
   BucketReportRow,
   ModelReportRow,
@@ -7,7 +8,7 @@ import {
   SourceReportRow,
   SummaryReport,
 } from "../types.js";
-import { renderTable } from "./table.js";
+import { formatDateCompact, renderTable } from "./table.js";
 
 function formatNumber(value: number): string {
   return value.toLocaleString("en-US");
@@ -86,6 +87,7 @@ export function renderSummaryText(summary: SummaryReport): string {
 export function renderBucketText(
   rows: BucketReportRow[],
   bucketHeader: string,
+  forceCompact = false,
 ): string {
   const totals = rows.reduce(
     (accumulator, row) => {
@@ -134,21 +136,26 @@ export function renderBucketText(
     }),
     {
       aligns: ["left", "left", "right", "right", "right", "right", "right", "right"],
+      compactHeaders: [bucketHeader, "Models", "Input", "Output", "Cost (USD)"],
+      compactAligns: ["left", "left", "right", "right", "right"],
+      compactThreshold: 100,
+      forceCompact,
+      dateFormatter: formatDateCompact,
       footer: [
-        "Total",
+        pc.yellow("Total"),
         "",
-        formatNumber(totals.inputTokens),
-        formatNumber(totals.outputTokens),
-        formatNumber(totals.reasoningTokens),
-        formatNumber(totals.cacheReadTokens),
-        formatNumber(totals.totalTokens),
-        formatCurrency(totals.estimatedCost),
+        pc.yellow(formatNumber(totals.inputTokens)),
+        pc.yellow(formatNumber(totals.outputTokens)),
+        pc.yellow(formatNumber(totals.reasoningTokens)),
+        pc.yellow(formatNumber(totals.cacheReadTokens)),
+        pc.yellow(formatNumber(totals.totalTokens)),
+        pc.yellow(formatCurrency(totals.estimatedCost)),
       ],
     },
   )}\n`;
 }
 
-export function renderSessionText(rows: SessionReportRow[]): string {
+export function renderSessionText(rows: SessionReportRow[], forceCompact = false): string {
   const totals = rows.reduce(
     (accumulator, row) => {
       const split = splitUsageTokens(row);
@@ -202,24 +209,29 @@ export function renderSessionText(rows: SessionReportRow[]): string {
     }),
     {
       aligns: ["left", "left", "left", "left", "right", "right", "right", "right", "right", "right", "left"],
+      compactHeaders: ["Date", "Directory", "Session", "Input", "Output", "Cost (USD)"],
+      compactAligns: ["left", "left", "left", "right", "right", "right"],
+      compactThreshold: 100,
+      forceCompact,
+      dateFormatter: formatDateCompact,
       footer: [
         "",
         "",
-        "Total",
+        pc.yellow("Total"),
         "",
-        formatNumber(totals.inputTokens),
-        formatNumber(totals.outputTokens),
-        formatNumber(totals.reasoningTokens),
-        formatNumber(totals.cacheReadTokens),
-        formatNumber(totals.totalTokens),
-        formatCurrency(totals.estimatedCost),
+        pc.yellow(formatNumber(totals.inputTokens)),
+        pc.yellow(formatNumber(totals.outputTokens)),
+        pc.yellow(formatNumber(totals.reasoningTokens)),
+        pc.yellow(formatNumber(totals.cacheReadTokens)),
+        pc.yellow(formatNumber(totals.totalTokens)),
+        pc.yellow(formatCurrency(totals.estimatedCost)),
         "",
       ],
     },
   )}\n`;
 }
 
-export function renderModelText(rows: ModelReportRow[]): string {
+export function renderModelText(rows: ModelReportRow[], forceCompact = false): string {
   return `${renderTable(
     ["Model", "Sessions", "Events", "Total", "Cost (USD)"],
     rows.map((row) => [
@@ -231,18 +243,22 @@ export function renderModelText(rows: ModelReportRow[]): string {
     ]),
     {
       aligns: ["left", "right", "right", "right", "right"],
+      compactHeaders: ["Model", "Total", "Cost (USD)"],
+      compactAligns: ["left", "right", "right"],
+      compactThreshold: 100,
+      forceCompact,
       footer: [
-        "Total",
-        formatNumber(sumValues(rows, (row) => row.sessionCount)),
-        formatNumber(sumValues(rows, (row) => row.eventCount)),
-        formatNumber(sumValues(rows, (row) => row.totalTokens)),
-        formatCurrency(sumValues(rows, (row) => row.estimatedCost)),
+        pc.yellow("Total"),
+        pc.yellow(formatNumber(sumValues(rows, (row) => row.sessionCount))),
+        pc.yellow(formatNumber(sumValues(rows, (row) => row.eventCount))),
+        pc.yellow(formatNumber(sumValues(rows, (row) => row.totalTokens))),
+        pc.yellow(formatCurrency(sumValues(rows, (row) => row.estimatedCost))),
       ],
     },
   )}\n`;
 }
 
-export function renderSourceText(rows: SourceReportRow[]): string {
+export function renderSourceText(rows: SourceReportRow[], forceCompact = false): string {
   return `${renderTable(
     ["Source", "Sessions", "Events", "Total", "Cost (USD)"],
     rows.map((row) => [
@@ -254,18 +270,22 @@ export function renderSourceText(rows: SourceReportRow[]): string {
     ]),
     {
       aligns: ["left", "right", "right", "right", "right"],
+      compactHeaders: ["Source", "Total", "Cost (USD)"],
+      compactAligns: ["left", "right", "right"],
+      compactThreshold: 100,
+      forceCompact,
       footer: [
-        "Total",
-        formatNumber(sumValues(rows, (row) => row.sessionCount)),
-        formatNumber(sumValues(rows, (row) => row.eventCount)),
-        formatNumber(sumValues(rows, (row) => row.totalTokens)),
-        formatCurrency(sumValues(rows, (row) => row.estimatedCost)),
+        pc.yellow("Total"),
+        pc.yellow(formatNumber(sumValues(rows, (row) => row.sessionCount))),
+        pc.yellow(formatNumber(sumValues(rows, (row) => row.eventCount))),
+        pc.yellow(formatNumber(sumValues(rows, (row) => row.totalTokens))),
+        pc.yellow(formatCurrency(sumValues(rows, (row) => row.estimatedCost))),
       ],
     },
   )}\n`;
 }
 
-export function renderEventsText(rows: PricedUsageEvent[]): string {
+export function renderEventsText(rows: PricedUsageEvent[], forceCompact = false): string {
   return `${renderTable(
     ["Timestamp", "Session", "Model", "Input", "Cache Read", "Output", "Total Tokens", "Cost (USD)"],
     rows.map((row) => {
@@ -283,15 +303,19 @@ export function renderEventsText(rows: PricedUsageEvent[]): string {
     }),
     {
       aligns: ["left", "left", "left", "right", "right", "right", "right", "right"],
+      compactHeaders: ["Timestamp", "Session", "Model", "Cost (USD)"],
+      compactAligns: ["left", "left", "left", "right"],
+      compactThreshold: 100,
+      forceCompact,
       footer: [
-        "Total",
+        pc.yellow("Total"),
         "",
         "",
-        formatNumber(sumValues(rows, (row) => splitUsageTokens(row).inputTokens)),
-        formatNumber(sumValues(rows, (row) => splitUsageTokens(row).cacheReadTokens)),
-        formatNumber(sumValues(rows, (row) => splitUsageTokens(row).outputTokens)),
-        formatNumber(sumValues(rows, (row) => row.totalTokens)),
-        formatCurrency(sumValues(rows, (row) => row.estimatedCost ?? 0)),
+        pc.yellow(formatNumber(sumValues(rows, (row) => splitUsageTokens(row).inputTokens))),
+        pc.yellow(formatNumber(sumValues(rows, (row) => splitUsageTokens(row).cacheReadTokens))),
+        pc.yellow(formatNumber(sumValues(rows, (row) => splitUsageTokens(row).outputTokens))),
+        pc.yellow(formatNumber(sumValues(rows, (row) => row.totalTokens))),
+        pc.yellow(formatCurrency(sumValues(rows, (row) => row.estimatedCost ?? 0))),
       ],
     },
   )}\n`;

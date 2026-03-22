@@ -26,6 +26,8 @@ function createIo() {
 describe("runCli", () => {
   it("renders summary json for a fixture codex home", async () => {
     const { io, read } = createIo();
+    const previousColumns = process.env.COLUMNS;
+    process.env.COLUMNS = "200";
     const exitCode = await runCli(
       [
         "summary",
@@ -38,6 +40,7 @@ describe("runCli", () => {
       io,
       {},
     );
+    process.env.COLUMNS = previousColumns;
 
     const { stdout, stderr } = read();
     expect(exitCode).toBe(0);
@@ -55,6 +58,8 @@ describe("runCli", () => {
 
   it("supports daily text output with date filtering", async () => {
     const { io, read } = createIo();
+    const previousColumns = process.env.COLUMNS;
+    process.env.COLUMNS = "200";
     const exitCode = await runCli(
       [
         "daily",
@@ -68,6 +73,7 @@ describe("runCli", () => {
       io,
       {},
     );
+    process.env.COLUMNS = previousColumns;
 
     const { stdout } = read();
     expect(exitCode).toBe(0);

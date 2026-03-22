@@ -13,6 +13,6 @@ export function runMonthlyCommand(
         `Codex Token Usage Report - Monthly (Timezone: ${context.options.timezone})`,
       ) +
       "\n" +
-      renderBucketText(rows, "Month"),
+      renderBucketText(rows, "Month", context.options.compact),
   };
 }

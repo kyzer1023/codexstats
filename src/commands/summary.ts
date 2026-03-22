@@ -28,8 +28,8 @@ export function runSummaryCommand(
     text:
       renderSummaryText(summary) +
       "\nModels\n" +
-      renderModelText(models) +
+      renderModelText(models, context.options.compact) +
       "\nSources\n" +
-      renderSourceText(sources),
+      renderSourceText(sources, context.options.compact),
   };
 }

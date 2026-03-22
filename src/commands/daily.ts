@@ -13,6 +13,6 @@ export function runDailyCommand(
         `Codex Token Usage Report - Daily (Timezone: ${context.options.timezone})`,
       ) +
       "\n" +
-      renderBucketText(rows, "Date"),
+      renderBucketText(rows, "Date", context.options.compact),
   };
 }

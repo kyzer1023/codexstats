@@ -13,6 +13,6 @@ export function runSessionCommand(
         `Codex Token Usage Report - Sessions (Timezone: ${context.options.timezone})`,
       ) +
       "\n" +
-      renderSessionText(rows),
+      renderSessionText(rows, context.options.compact),
   };
 }
