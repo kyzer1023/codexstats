@@ -20,23 +20,27 @@ function formatCurrency(value: number): string {
   return `$${value.toFixed(6)}`;
 }
 
+function sumValues<T>(rows: T[], pick: (row: T) => number): number {
+  return rows.reduce((total, row) => total + pick(row), 0);
+}
+
 export function renderSummaryText(summary: SummaryReport): string {
-  const lines = [
-    `Sessions: ${summary.sessionCount} (${summary.measurableSessionCount} measurable)`,
-    `Events: ${summary.eventCount}`,
-    `Input: ${formatNumber(summary.inputTokens)}`,
-    `Cached input: ${formatNumber(summary.cachedInputTokens)}`,
-    `Output: ${formatNumber(summary.outputTokens)}`,
-    `Reasoning output: ${formatNumber(summary.reasoningOutputTokens)}`,
-    `Total: ${formatNumber(summary.totalTokens)}`,
-    `Estimated cost: ${formatCurrency(summary.estimatedCost)}`,
+  const rows = [
+    ["Sessions", formatNumber(summary.sessionCount)],
+    ["Measurable sessions", formatNumber(summary.measurableSessionCount)],
+    ["Events", formatNumber(summary.eventCount)],
+    ["Input", formatNumber(summary.inputTokens)],
+    ["Cached input", formatNumber(summary.cachedInputTokens)],
+    ["Output", formatNumber(summary.outputTokens)],
+    ["Reasoning output", formatNumber(summary.reasoningOutputTokens)],
+    ["Total tokens", formatNumber(summary.totalTokens)],
+    ["Estimated cost", formatCurrency(summary.estimatedCost)],
+    ["Warnings", summary.warnings.length > 0 ? summary.warnings.join(", ") : "-"],
   ];
 
-  if (summary.warnings.length > 0) {
-    lines.push(`Warnings: ${summary.warnings.join(", ")}`);
-  }
-
-  return `${lines.join("\n")}\n`;
+  return `${renderTable(["Metric", "Value"], rows, {
+    aligns: ["left", "right"],
+  })}\n`;
 }
 
 export function renderBucketText(
@@ -44,7 +48,7 @@ export function renderBucketText(
   bucketHeader: string,
 ): string {
   return `${renderTable(
-    [bucketHeader, "Sessions", "Events", "Input", "Cached", "Output", "Total", "Cost"],
+    [bucketHeader, "Sessions", "Events", "Input", "Cached", "Output", "Total", "Cost (USD)"],
     rows.map((row) => [
       row.bucket,
       formatNumber(row.sessionCount),
@@ -55,12 +59,25 @@ export function renderBucketText(
       formatNumber(row.totalTokens),
       formatCurrency(row.estimatedCost),
     ]),
+    {
+      aligns: ["left", "right", "right", "right", "right", "right", "right", "right"],
+      footer: [
+        "TOTAL",
+        formatNumber(sumValues(rows, (row) => row.sessionCount)),
+        formatNumber(sumValues(rows, (row) => row.eventCount)),
+        formatNumber(sumValues(rows, (row) => row.inputTokens)),
+        formatNumber(sumValues(rows, (row) => row.cachedInputTokens)),
+        formatNumber(sumValues(rows, (row) => row.outputTokens)),
+        formatNumber(sumValues(rows, (row) => row.totalTokens)),
+        formatCurrency(sumValues(rows, (row) => row.estimatedCost)),
+      ],
+    },
   )}\n`;
 }
 
 export function renderSessionText(rows: SessionReportRow[]): string {
   return `${renderTable(
-    ["Session", "Source", "Events", "Total", "Cost", "Status"],
+    ["Session", "Source", "Events", "Total", "Cost (USD)", "Status"],
     rows.map((row) => [
       row.sessionId,
       row.source,
@@ -69,12 +86,23 @@ export function renderSessionText(rows: SessionReportRow[]): string {
       formatCurrency(row.estimatedCost),
       row.isMeasurable ? "measurable" : "unmeasurable",
     ]),
+    {
+      aligns: ["left", "left", "right", "right", "right", "left"],
+      footer: [
+        "TOTAL",
+        `${sumValues(rows, (row) => (row.isMeasurable ? 1 : 0))}/${rows.length} measurable`,
+        formatNumber(sumValues(rows, (row) => row.eventCount)),
+        formatNumber(sumValues(rows, (row) => row.totalTokens)),
+        formatCurrency(sumValues(rows, (row) => row.estimatedCost)),
+        "",
+      ],
+    },
   )}\n`;
 }
 
 export function renderModelText(rows: ModelReportRow[]): string {
   return `${renderTable(
-    ["Model", "Sessions", "Events", "Total", "Cost"],
+    ["Model", "Sessions", "Events", "Total", "Cost (USD)"],
     rows.map((row) => [
       row.model,
       formatNumber(row.sessionCount),
@@ -82,12 +110,22 @@ export function renderModelText(rows: ModelReportRow[]): string {
       formatNumber(row.totalTokens),
       formatCurrency(row.estimatedCost),
     ]),
+    {
+      aligns: ["left", "right", "right", "right", "right"],
+      footer: [
+        "TOTAL",
+        formatNumber(sumValues(rows, (row) => row.sessionCount)),
+        formatNumber(sumValues(rows, (row) => row.eventCount)),
+        formatNumber(sumValues(rows, (row) => row.totalTokens)),
+        formatCurrency(sumValues(rows, (row) => row.estimatedCost)),
+      ],
+    },
   )}\n`;
 }
 
 export function renderSourceText(rows: SourceReportRow[]): string {
   return `${renderTable(
-    ["Source", "Sessions", "Events", "Total", "Cost"],
+    ["Source", "Sessions", "Events", "Total", "Cost (USD)"],
     rows.map((row) => [
       row.source,
       formatNumber(row.sessionCount),
@@ -95,12 +133,22 @@ export function renderSourceText(rows: SourceReportRow[]): string {
       formatNumber(row.totalTokens),
       formatCurrency(row.estimatedCost),
     ]),
+    {
+      aligns: ["left", "right", "right", "right", "right"],
+      footer: [
+        "TOTAL",
+        formatNumber(sumValues(rows, (row) => row.sessionCount)),
+        formatNumber(sumValues(rows, (row) => row.eventCount)),
+        formatNumber(sumValues(rows, (row) => row.totalTokens)),
+        formatCurrency(sumValues(rows, (row) => row.estimatedCost)),
+      ],
+    },
   )}\n`;
 }
 
 export function renderEventsText(rows: PricedUsageEvent[]): string {
   return `${renderTable(
-    ["Timestamp", "Session", "Model", "Input", "Cached", "Output", "Total", "Cost"],
+    ["Timestamp", "Session", "Model", "Input", "Cached", "Output", "Total", "Cost (USD)"],
     rows.map((row) => [
       row.timestamp,
       row.sessionId,
@@ -111,5 +159,18 @@ export function renderEventsText(rows: PricedUsageEvent[]): string {
       formatNumber(row.totalTokens),
       formatCurrency(row.estimatedCost ?? 0),
     ]),
+    {
+      aligns: ["left", "left", "left", "right", "right", "right", "right", "right"],
+      footer: [
+        "TOTAL",
+        "",
+        "",
+        formatNumber(sumValues(rows, (row) => row.inputTokens)),
+        formatNumber(sumValues(rows, (row) => row.cachedInputTokens)),
+        formatNumber(sumValues(rows, (row) => row.outputTokens)),
+        formatNumber(sumValues(rows, (row) => row.totalTokens)),
+        formatCurrency(sumValues(rows, (row) => row.estimatedCost ?? 0)),
+      ],
+    },
   )}\n`;
 }
