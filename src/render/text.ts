@@ -1,6 +1,7 @@
 import {
   BucketReportRow,
   ModelReportRow,
+  ModelUsageSummary,
   PricedUsageEvent,
   SessionReportRow,
   SourceReportRow,
@@ -13,15 +14,46 @@ function formatNumber(value: number): string {
 }
 
 function formatCurrency(value: number): string {
-  if (value >= 1) {
-    return `$${value.toFixed(2)}`;
-  }
-
-  return `$${value.toFixed(6)}`;
+  return `$${value.toFixed(2)}`;
 }
 
 function sumValues<T>(rows: T[], pick: (row: T) => number): number {
   return rows.reduce((total, row) => total + pick(row), 0);
+}
+
+function splitUsageTokens(usage: {
+  inputTokens: number;
+  cachedInputTokens: number;
+  outputTokens: number;
+  reasoningOutputTokens: number;
+}): {
+  inputTokens: number;
+  outputTokens: number;
+  reasoningTokens: number;
+  cacheReadTokens: number;
+} {
+  const cacheReadTokens = Math.min(usage.cachedInputTokens, usage.inputTokens);
+  const inputTokens = Math.max(usage.inputTokens - cacheReadTokens, 0);
+  const outputTokens = Math.max(usage.outputTokens, 0);
+  const reasoningTokens = Math.max(
+    0,
+    Math.min(usage.reasoningOutputTokens, outputTokens),
+  );
+
+  return {
+    inputTokens,
+    outputTokens,
+    reasoningTokens,
+    cacheReadTokens,
+  };
+}
+
+function formatModels(models: Record<string, ModelUsageSummary>): string {
+  const names = Object.entries(models)
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([model, usage]) => (usage.isFallback ? `${model} (fallback)` : model));
+
+  return names.length > 0 ? names.join(", ") : "-";
 }
 
 export function renderSummaryText(summary: SummaryReport): string {
@@ -47,53 +79,132 @@ export function renderBucketText(
   rows: BucketReportRow[],
   bucketHeader: string,
 ): string {
-  return `${renderTable(
-    [bucketHeader, "Sessions", "Events", "Input", "Cached", "Output", "Total", "Cost (USD)"],
-    rows.map((row) => [
-      row.bucket,
-      formatNumber(row.sessionCount),
-      formatNumber(row.eventCount),
-      formatNumber(row.inputTokens),
-      formatNumber(row.cachedInputTokens),
-      formatNumber(row.outputTokens),
-      formatNumber(row.totalTokens),
-      formatCurrency(row.estimatedCost),
-    ]),
+  const totals = rows.reduce(
+    (accumulator, row) => {
+      const split = splitUsageTokens(row);
+      accumulator.inputTokens += split.inputTokens;
+      accumulator.outputTokens += split.outputTokens;
+      accumulator.reasoningTokens += split.reasoningTokens;
+      accumulator.cacheReadTokens += split.cacheReadTokens;
+      accumulator.totalTokens += row.totalTokens;
+      accumulator.estimatedCost += row.estimatedCost;
+      return accumulator;
+    },
     {
-      aligns: ["left", "right", "right", "right", "right", "right", "right", "right"],
+      inputTokens: 0,
+      outputTokens: 0,
+      reasoningTokens: 0,
+      cacheReadTokens: 0,
+      totalTokens: 0,
+      estimatedCost: 0,
+    },
+  );
+
+  return `${renderTable(
+    [
+      bucketHeader,
+      "Models",
+      "Input",
+      "Output",
+      "Reasoning",
+      "Cache Read",
+      "Total Tokens",
+      "Cost (USD)",
+    ],
+    rows.map((row) => {
+      const split = splitUsageTokens(row);
+      return [
+        row.bucket,
+        formatModels(row.models),
+        formatNumber(split.inputTokens),
+        formatNumber(split.outputTokens),
+        formatNumber(split.reasoningTokens),
+        formatNumber(split.cacheReadTokens),
+        formatNumber(row.totalTokens),
+        formatCurrency(row.estimatedCost),
+      ];
+    }),
+    {
+      aligns: ["left", "left", "right", "right", "right", "right", "right", "right"],
       footer: [
-        "TOTAL",
-        formatNumber(sumValues(rows, (row) => row.sessionCount)),
-        formatNumber(sumValues(rows, (row) => row.eventCount)),
-        formatNumber(sumValues(rows, (row) => row.inputTokens)),
-        formatNumber(sumValues(rows, (row) => row.cachedInputTokens)),
-        formatNumber(sumValues(rows, (row) => row.outputTokens)),
-        formatNumber(sumValues(rows, (row) => row.totalTokens)),
-        formatCurrency(sumValues(rows, (row) => row.estimatedCost)),
+        "Total",
+        "",
+        formatNumber(totals.inputTokens),
+        formatNumber(totals.outputTokens),
+        formatNumber(totals.reasoningTokens),
+        formatNumber(totals.cacheReadTokens),
+        formatNumber(totals.totalTokens),
+        formatCurrency(totals.estimatedCost),
       ],
     },
   )}\n`;
 }
 
 export function renderSessionText(rows: SessionReportRow[]): string {
-  return `${renderTable(
-    ["Session", "Source", "Events", "Total", "Cost (USD)", "Status"],
-    rows.map((row) => [
-      row.sessionId,
-      row.source,
-      formatNumber(row.eventCount),
-      formatNumber(row.totalTokens),
-      formatCurrency(row.estimatedCost),
-      row.isMeasurable ? "measurable" : "unmeasurable",
-    ]),
+  const totals = rows.reduce(
+    (accumulator, row) => {
+      const split = splitUsageTokens(row);
+      accumulator.inputTokens += split.inputTokens;
+      accumulator.outputTokens += split.outputTokens;
+      accumulator.reasoningTokens += split.reasoningTokens;
+      accumulator.cacheReadTokens += split.cacheReadTokens;
+      accumulator.totalTokens += row.totalTokens;
+      accumulator.estimatedCost += row.estimatedCost;
+      return accumulator;
+    },
     {
-      aligns: ["left", "left", "right", "right", "right", "left"],
+      inputTokens: 0,
+      outputTokens: 0,
+      reasoningTokens: 0,
+      cacheReadTokens: 0,
+      totalTokens: 0,
+      estimatedCost: 0,
+    },
+  );
+
+  return `${renderTable(
+    [
+      "Date",
+      "Directory",
+      "Session",
+      "Models",
+      "Input",
+      "Output",
+      "Reasoning",
+      "Cache Read",
+      "Total Tokens",
+      "Cost (USD)",
+      "Last Activity",
+    ],
+    rows.map((row) => {
+      const split = splitUsageTokens(row);
+      return [
+        row.lastActivity?.slice(0, 10) ?? row.createdAt?.slice(0, 10) ?? "-",
+        row.directory || "-",
+        row.sessionFile.length > 8 ? `...${row.sessionFile.slice(-8)}` : row.sessionFile,
+        formatModels(row.models),
+        formatNumber(split.inputTokens),
+        formatNumber(split.outputTokens),
+        formatNumber(split.reasoningTokens),
+        formatNumber(split.cacheReadTokens),
+        formatNumber(row.totalTokens),
+        formatCurrency(row.estimatedCost),
+        row.lastActivity ?? "-",
+      ];
+    }),
+    {
+      aligns: ["left", "left", "left", "left", "right", "right", "right", "right", "right", "right", "left"],
       footer: [
-        "TOTAL",
-        `${sumValues(rows, (row) => (row.isMeasurable ? 1 : 0))}/${rows.length} measurable`,
-        formatNumber(sumValues(rows, (row) => row.eventCount)),
-        formatNumber(sumValues(rows, (row) => row.totalTokens)),
-        formatCurrency(sumValues(rows, (row) => row.estimatedCost)),
+        "",
+        "",
+        "Total",
+        "",
+        formatNumber(totals.inputTokens),
+        formatNumber(totals.outputTokens),
+        formatNumber(totals.reasoningTokens),
+        formatNumber(totals.cacheReadTokens),
+        formatNumber(totals.totalTokens),
+        formatCurrency(totals.estimatedCost),
         "",
       ],
     },
@@ -113,7 +224,7 @@ export function renderModelText(rows: ModelReportRow[]): string {
     {
       aligns: ["left", "right", "right", "right", "right"],
       footer: [
-        "TOTAL",
+        "Total",
         formatNumber(sumValues(rows, (row) => row.sessionCount)),
         formatNumber(sumValues(rows, (row) => row.eventCount)),
         formatNumber(sumValues(rows, (row) => row.totalTokens)),
@@ -136,7 +247,7 @@ export function renderSourceText(rows: SourceReportRow[]): string {
     {
       aligns: ["left", "right", "right", "right", "right"],
       footer: [
-        "TOTAL",
+        "Total",
         formatNumber(sumValues(rows, (row) => row.sessionCount)),
         formatNumber(sumValues(rows, (row) => row.eventCount)),
         formatNumber(sumValues(rows, (row) => row.totalTokens)),
@@ -148,26 +259,29 @@ export function renderSourceText(rows: SourceReportRow[]): string {
 
 export function renderEventsText(rows: PricedUsageEvent[]): string {
   return `${renderTable(
-    ["Timestamp", "Session", "Model", "Input", "Cached", "Output", "Total", "Cost (USD)"],
-    rows.map((row) => [
-      row.timestamp,
-      row.sessionId,
-      row.canonicalModel,
-      formatNumber(row.inputTokens),
-      formatNumber(row.cachedInputTokens),
-      formatNumber(row.outputTokens),
-      formatNumber(row.totalTokens),
-      formatCurrency(row.estimatedCost ?? 0),
-    ]),
+    ["Timestamp", "Session", "Model", "Input", "Cache Read", "Output", "Total Tokens", "Cost (USD)"],
+    rows.map((row) => {
+      const split = splitUsageTokens(row);
+      return [
+        row.timestamp,
+        row.sessionId,
+        row.canonicalModel,
+        formatNumber(split.inputTokens),
+        formatNumber(split.cacheReadTokens),
+        formatNumber(split.outputTokens),
+        formatNumber(row.totalTokens),
+        formatCurrency(row.estimatedCost ?? 0),
+      ];
+    }),
     {
       aligns: ["left", "left", "left", "right", "right", "right", "right", "right"],
       footer: [
-        "TOTAL",
+        "Total",
         "",
         "",
-        formatNumber(sumValues(rows, (row) => row.inputTokens)),
-        formatNumber(sumValues(rows, (row) => row.cachedInputTokens)),
-        formatNumber(sumValues(rows, (row) => row.outputTokens)),
+        formatNumber(sumValues(rows, (row) => splitUsageTokens(row).inputTokens)),
+        formatNumber(sumValues(rows, (row) => splitUsageTokens(row).cacheReadTokens)),
+        formatNumber(sumValues(rows, (row) => splitUsageTokens(row).outputTokens)),
         formatNumber(sumValues(rows, (row) => row.totalTokens)),
         formatCurrency(sumValues(rows, (row) => row.estimatedCost ?? 0)),
       ],

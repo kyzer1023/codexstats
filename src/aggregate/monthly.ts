@@ -11,6 +11,7 @@ function emptyBucket(bucket: string): BucketReportRow {
     reasoningOutputTokens: 0,
     totalTokens: 0,
     estimatedCost: 0,
+    models: {},
   };
 }
 
@@ -28,6 +29,13 @@ export function aggregateMonthly(pricedEvents: PricedUsageEvent[]): BucketReport
     row.reasoningOutputTokens += event.reasoningOutputTokens;
     row.totalTokens += event.totalTokens;
     row.estimatedCost += event.estimatedCost ?? 0;
+    const modelUsage = row.models[event.canonicalModel] ?? {
+      totalTokens: 0,
+      isFallback: false,
+    };
+    modelUsage.totalTokens += event.totalTokens;
+    modelUsage.isFallback ||= event.isFallbackModel;
+    row.models[event.canonicalModel] = modelUsage;
     buckets.set(bucket, row);
 
     const sessionIds = sessionsByBucket.get(bucket) ?? new Set<string>();

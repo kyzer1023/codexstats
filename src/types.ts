@@ -62,14 +62,23 @@ export interface NormalizedUsageEvent extends UsageSnapshot {
   warnings: string[];
 }
 
+export interface ModelUsageSummary {
+  totalTokens: number;
+  isFallback: boolean;
+}
+
 export interface SessionReportRow extends UsageSnapshot {
   sessionId: string;
   source: string;
   createdAt: string | undefined;
+  lastActivity: string | undefined;
+  directory: string;
+  sessionFile: string;
   eventCount: number;
   estimatedCost: number;
   isMeasurable: boolean;
   fallbackEventCount: number;
+  models: Record<string, ModelUsageSummary>;
   warnings: string[];
 }
 
@@ -78,6 +87,7 @@ export interface BucketReportRow extends UsageSnapshot {
   sessionCount: number;
   eventCount: number;
   estimatedCost: number;
+  models: Record<string, ModelUsageSummary>;
 }
 
 export interface ModelReportRow extends UsageSnapshot {
